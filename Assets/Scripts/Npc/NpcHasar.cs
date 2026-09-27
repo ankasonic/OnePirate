@@ -38,7 +38,7 @@ public class NpcHasar : NetworkBehaviour
     // GDD: "Ödül Sahibi: En çok hasar veren oyuncu. Hasar Sayacı Sıfırlama: Can tam dolunca sıfırlanır."
     private readonly Dictionary<NetworkIdentity, int> oyuncuHasarlari = new();
     private float sonHasarZamani;
-    private const float OTO_TAMIR_SURESI = 600f; // 10 dakika
+    private const float OTO_TAMIR_SURESI = 300f; // 5 dakika
 
     private NpcOdul npcOdul;
     private NpcHareket npcHareket;
@@ -68,7 +68,7 @@ public class NpcHasar : NetworkBehaviour
     {
         if (!isServer) return;
 
-        // GDD: "Can Dolumu: 10 dakika içerisinde hasar almazsa Max HP'ye otomatik ulaşır."
+        // GDD: "Can Dolumu: 5 dakika içerisinde hasar almazsa Max HP'ye otomatik ulaşır."
         if (guncelCan > 0 && guncelCan < maksCan && (Time.time - sonHasarZamani >= OTO_TAMIR_SURESI))
         {
             guncelCan = maksCan;

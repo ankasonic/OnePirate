@@ -218,7 +218,7 @@ public class OyuncuAtes : NetworkBehaviour
         }
 
         Vector3 cikisPos = atisNoktasi != null ? atisNoktasi.position : transform.position;
-        GameObject gulle = Instantiate(gullePrefab, cikisPos, Quaternion.identity);
+        GameObject gulle = NesneHavuzu.Al(gullePrefab, cikisPos, Quaternion.identity);
         Gulle gulleScript = gulle.GetComponent<Gulle>();
         if (gulleScript != null)
         {

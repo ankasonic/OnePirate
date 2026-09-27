@@ -14,5 +14,11 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Haritalar/1-1.unity
     guid: 3bfcdb60dd736b04eb8d0bd212d71fa3
+  - enabled: 1
+    path: Assets/Scenes/Haritalar/2-1.unity
+    guid: ee0d12e095daa75459c94d5bf0465e60
+  - enabled: 1
+    path: Assets/Scenes/Oyun_UI.unity
+    guid: b9e68148015beae409a14e9ce32bb166
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}

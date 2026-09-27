@@ -9,14 +9,17 @@ public class OyuncuHareket : NetworkBehaviour
     private bool hareket = false;
     private Camera oyuncuKamera;
 
+    private Rigidbody2D rb;
+
     private void Start()
     {
         hedefPozisyon = transform.position;
 
-        // Z ekseninde dönmeyi fizik seviyesinde kilitle
-        Rigidbody2D rb = GetComponent<Rigidbody2D>();
+        rb = GetComponent<Rigidbody2D>();
         if (rb != null)
         {
+            // Fiziğe dayalı hareket pürüzsüzlüğü için interpolation ayarla
+            rb.interpolation = RigidbodyInterpolation2D.Interpolate;
             rb.constraints = RigidbodyConstraints2D.FreezeRotation;
         }
     }
@@ -65,7 +68,13 @@ public class OyuncuHareket : NetworkBehaviour
             hareket = true;
         }
 
-        // Oyuncuyu hedefe doğru hareket ettir
+    }
+
+    private void FixedUpdate()
+    {
+        if (!isLocalPlayer) return;
+
+        // Oyuncuyu hedefe doğru hareket ettir (Fizik motoru ile uyumlu ve titreşimsiz)
         if (hareket)
         {
             OyuncuyuHareket();
@@ -98,16 +107,27 @@ public class OyuncuHareket : NetworkBehaviour
 
     private void OyuncuyuHareket()
     {
-        float mesafe = Vector3.Distance(transform.position, hedefPozisyon);
+        Vector2 suankiPozisyon = rb != null ? rb.position : (Vector2)transform.position;
+        float mesafe = Vector2.Distance(suankiPozisyon, hedefPozisyon);
+        float hareketMiktari = hiz * Time.fixedDeltaTime;
 
-        if (mesafe > 0.1f)
+        if (mesafe > hareketMiktari)
         {
-            Vector3 yon = (hedefPozisyon - transform.position).normalized;
-            transform.position += yon * hiz * Time.deltaTime;
+            Vector2 yon = ((Vector2)hedefPozisyon - suankiPozisyon).normalized;
+            Vector2 yeniPozisyon = suankiPozisyon + yon * hareketMiktari;
+            
+            if (rb != null)
+                rb.MovePosition(yeniPozisyon);
+            else
+                transform.position = yeniPozisyon;
         }
         else
         {
-            transform.position = hedefPozisyon;
+            if (rb != null)
+                rb.MovePosition(hedefPozisyon);
+            else
+                transform.position = hedefPozisyon;
+                
             hareket = false;
         }
     }

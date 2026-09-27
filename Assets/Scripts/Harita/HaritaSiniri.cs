@@ -17,10 +17,22 @@ public class HaritaSiniri : MonoBehaviour
 
     private void Start()
     {
-        if (!sinirlarHesaplandi)
-        {
-            Hesapla();
-        }
+        Hesapla();
+    }
+
+    private void OnEnable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        Hesapla();
     }
 
     public static void Hesapla()

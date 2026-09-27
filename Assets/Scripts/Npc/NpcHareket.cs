@@ -4,20 +4,26 @@ using Mirror;
 public class NpcHareket : NetworkBehaviour
 {
     [Header("Hareket ve Savaş Ayarları")]
-    [SerializeField] private float hiz = 2f;
+    [SerializeField] private float hiz = 1f;
     [SerializeField] private int hasar = 100;
     [SerializeField] private bool agresif = false;
     [SerializeField] private float gorusAlani = 15f; // GDD: "Her seviye geminin görüş alanı 15 birimdir"
     [SerializeField] private float atisMenzili = 8f;
     [SerializeField] private float atisAraligi = 3.5f;
 
-    [Header("Hedef Durumu")]
+    [Header("Mühimmat Ayarları")]
+    [SerializeField] private GameObject alevGullePrefab;
+    [SerializeField] private Transform atisNoktasi;
+
+    [Header("Devriye Ayarları")]
     private Transform hedefOyuncu;
     private NetworkIdentity hedefNetId;
     private float sonAtisZamani;
     private Vector3 devriyeHedefi;
     private bool devriyeModunda = false;
-    private float devriyeBeklemeZamani;
+    private float devriyeHizi = 0.5f;
+    private float devriyeYonDegistirmeZamani = 0f;
+    private float devriyeYonDegistirmeAraligi = 8f;
 
     public float Hiz => hiz;
     public int Hasar => hasar;
@@ -50,42 +56,63 @@ public class NpcHareket : NetworkBehaviour
         if (transform.rotation != Quaternion.identity)
             transform.rotation = Quaternion.identity;
 
-        // 1. Aktif hedef varsa kontrol et ve takip et / saldır
-        if (hedefOyuncu != null)
+        // Görüş alanında oyuncu var mı kontrol et
+        bool oyuncuGoruldu = OyuncuGorulduMu();
+
+        if (oyuncuGoruldu)
         {
-            float mesafe = Vector2.Distance(transform.position, hedefOyuncu.position);
-
-            // Görüş alanı dışına çıkarsa hedefi bırak (GDD: 15 birim)
-            if (mesafe > gorusAlani)
+            // Devriye moduna gir
+            if (!devriyeModunda)
             {
-                HedefiTemizle();
-                return;
+                devriyeModunda = true;
             }
 
-            // Menzile yaklaş
-            if (mesafe > atisMenzili)
-            {
-                Vector2 yon = (hedefOyuncu.position - transform.position).normalized;
-                transform.position += (Vector3)(yon * hiz * Time.deltaTime);
-            }
-
-            // GDD: Atış menzilindeyse ateş et
-            if (mesafe <= atisMenzili && Time.time - sonAtisZamani >= atisAraligi)
-            {
-                AtesEt();
-            }
-        }
-        else
-        {
-            // 2. Hedef yokken: Agresif ise görüş alanı içindeki oyuncuları tara
-            if (agresif)
+            // Agresif ise ve hedef yoksa en yakını bul
+            if (agresif && hedefOyuncu == null)
             {
                 EnYakinOyuncuyuBul();
             }
 
-            // 3. GDD: "İlk Durum: Uyku modu Hareketsiz (oyuncu görene kadar)..."
-            // Serbest veya sakin devriye/uyku hareketi
-            BostaKalmaHareketi();
+            // Aktif hedef varsa kontrol et ve takip et / saldır
+            if (hedefOyuncu != null)
+            {
+                float mesafe = Vector2.Distance(transform.position, hedefOyuncu.position);
+
+                // Görüş alanı dışına çıkarsa hedefi bırak
+                if (mesafe > gorusAlani)
+                {
+                    HedefiTemizle();
+                }
+                else
+                {
+                    // Menzile yaklaş
+                    if (mesafe > atisMenzili)
+                    {
+                        Vector2 yon = (hedefOyuncu.position - transform.position).normalized;
+                        transform.position += (Vector3)(yon * hiz * Time.deltaTime);
+                    }
+
+                    // Atış menzilindeyse ateş et
+                    if (mesafe <= atisMenzili && Time.time - sonAtisZamani >= atisAraligi)
+                    {
+                        AtesEt();
+                    }
+                }
+            }
+            else
+            {
+                // Hedef yoksa devriye hareketi yap
+                DevriyeHareketi();
+            }
+        }
+        else
+        {
+            // Hiç oyuncu görülmüyorsa uyku moduna dön (Tamamen hareketsiz)
+            if (devriyeModunda)
+            {
+                devriyeModunda = false;
+                HedefiTemizle();
+            }
         }
     }
 
@@ -93,28 +120,32 @@ public class NpcHareket : NetworkBehaviour
     {
         if (hedefOyuncu == null) return;
 
-        // GDD Kuralı: "Tutorial aşamasındaki oyuncu gemisinin canı yarıya inerse NPC ler bu oyuncu gemilerine ateş etmez."
-        OyuncuCanBari oyuncuCan = hedefOyuncu.GetComponent<OyuncuCanBari>();
-        if (oyuncuCan != null)
-        {
-            float canOrani = (float)oyuncuCan.GuncelCan / oyuncuCan.MaksCan;
-            if (canOrani <= 0.5f)
-            {
-                // Canı %50 veya daha az olan tutorial/korumalı oyuncuya ateş etme
-                return;
-            }
+        sonAtisZamani = Time.time;
 
-            sonAtisZamani = Time.time;
-            // GDD: "atılan gülleler kesinlikle hedefi bulur ıskalama gibi bir durum oyunda yoktur."
-            oyuncuCan.HasarAl(hasar);
-            RpcAtesEfekti(hedefOyuncu.position);
-        }
+        // GDD: NPC'ler kendilerine ateş eden oyunculara alev güllesi atar
+        RpcAlevGullesiAt(hedefOyuncu.gameObject, hasar);
     }
 
     [ClientRpc]
-    private void RpcAtesEfekti(Vector3 hedefPos)
+    private void RpcAlevGullesiAt(GameObject hedefObj, int hasarMiktari)
     {
-        // İleride gülle parçacığı / animasyonu burada tetiklenir
+        if (hedefObj == null) return;
+
+        if (alevGullePrefab == null)
+        {
+            Debug.LogWarning("[NpcHareket] Alev güllesi prefabı atanmamış! Lütfen inspector'dan atayın.");
+            return;
+        }
+
+        Vector3 cikisPos = atisNoktasi != null ? atisNoktasi.position : transform.position;
+
+        GameObject gulle = NesneHavuzu.Al(alevGullePrefab, cikisPos, Quaternion.identity);
+        Gulle gulleScript = gulle.GetComponent<Gulle>();
+        if (gulleScript != null)
+        {
+            // NPC'nin kendi netIdentity'sini atıyoruz (böylece hasarı NPC vermiş olacak)
+            gulleScript.Baslat(hedefObj.transform, hasarMiktari, netIdentity);
+        }
     }
 
     public void SaldiranaKarsilikVer(NetworkIdentity saldiran)
@@ -151,28 +182,37 @@ public class NpcHareket : NetworkBehaviour
         }
     }
 
-    private void BostaKalmaHareketi()
+    private bool OyuncuGorulduMu()
     {
-        if (devriyeModunda)
+        OyuncuHareket[] oyuncular = FindObjectsByType<OyuncuHareket>(FindObjectsSortMode.None);
+        foreach (var oyuncu in oyuncular)
         {
-            float mesafe = Vector2.Distance(transform.position, devriyeHedefi);
-            if (mesafe > 0.2f)
+            float mesafe = Vector2.Distance(transform.position, oyuncu.transform.position);
+            if (mesafe <= gorusAlani)
             {
-                Vector2 yon = (devriyeHedefi - transform.position).normalized;
-                transform.position += (Vector3)(yon * (hiz * 0.5f) * Time.deltaTime);
-            }
-            else
-            {
-                devriyeModunda = false;
-                devriyeBeklemeZamani = Time.time + Random.Range(4f, 10f); // Bekleme süresi
+                return true;
             }
         }
-        else if (Time.time >= devriyeBeklemeZamani)
+        return false;
+    }
+
+    private void DevriyeHareketi()
+    {
+        // Belirli aralıklarla yön değiştir
+        if (Time.time >= devriyeYonDegistirmeZamani)
         {
-            // Yakınlarda rastgele sakin bir nokta seç
-            Vector2 rastgeleNokta = (Vector2)transform.position + Random.insideUnitCircle * 4f;
+            Vector2 rastgeleYon = Random.insideUnitCircle.normalized;
+            Vector2 rastgeleNokta = (Vector2)transform.position + rastgeleYon * 8f;
             devriyeHedefi = rastgeleNokta;
-            devriyeModunda = true;
+            devriyeYonDegistirmeZamani = Time.time + devriyeYonDegistirmeAraligi;
+        }
+
+        // Hedef noktaya doğru yavaşça ilerle
+        float mesafe = Vector2.Distance(transform.position, devriyeHedefi);
+        if (mesafe > 0.5f)
+        {
+            Vector2 yon = (devriyeHedefi - transform.position).normalized;
+            transform.position += (Vector3)(yon * hiz * devriyeHizi * Time.deltaTime);
         }
     }
 
@@ -180,7 +220,5 @@ public class NpcHareket : NetworkBehaviour
     {
         hedefOyuncu = null;
         hedefNetId = null;
-        devriyeModunda = false;
-        devriyeBeklemeZamani = Time.time + 3f;
     }
 }

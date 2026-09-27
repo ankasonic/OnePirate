@@ -39,7 +39,14 @@ public class HasarYazisi : MonoBehaviour
         }
 
         yaziText.text = metin;
-        Destroy(gameObject, yokOlmaSuresi);
+        gecenSure = 0f;
+        CancelInvoke(nameof(HavuzaDon));
+        Invoke(nameof(HavuzaDon), yokOlmaSuresi);
+    }
+
+    private void HavuzaDon()
+    {
+        NesneHavuzu.Birak(gameObject);
     }
 
     private void Update()

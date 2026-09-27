@@ -31,6 +31,11 @@ public class Gulle : MonoBehaviour
 
     public GulleTuru GulleTuru => gulleTuru;
 
+    private void Awake()
+    {
+        baslangicOlcegi = transform.localScale;
+    }
+
     public void Baslat(Transform hedef, int hasar, NetworkIdentity atesEdenKimlik, bool kritik = false)
     {
         hedefTransform = hedef;
@@ -39,7 +44,7 @@ public class Gulle : MonoBehaviour
         kritikMi = kritik;
 
         baslangicPozisyonu = transform.position;
-        baslangicOlcegi = transform.localScale;
+        transform.localScale = baslangicOlcegi; // Havuzdan geliyorsa scale'i resetle
 
         if (hedefTransform != null)
             sonHedefPozisyon = hedefTransform.position;
@@ -50,9 +55,16 @@ public class Gulle : MonoBehaviour
         // Minimum 0.3 saniye, mesafeye göre süreyi hesapla
         toplamSure = Mathf.Max(0.3f, toplamMesafe / hiz);
         gecenSure = 0f;
+        hedefeUlasti = false;
 
         // 5 saniye içinde hedefe ulaşamazsa sahnede takılı kalmasın
-        Destroy(gameObject, 5f);
+        CancelInvoke(nameof(IptalEtVeYokOl));
+        Invoke(nameof(IptalEtVeYokOl), 5f);
+    }
+    
+    private void IptalEtVeYokOl()
+    {
+        NesneHavuzu.Birak(gameObject);
     }
 
     private void Update()
@@ -172,7 +184,8 @@ public class Gulle : MonoBehaviour
         }
 
         // Gülle görselini yok et
-        Destroy(gameObject);
+        CancelInvoke(nameof(IptalEtVeYokOl));
+        NesneHavuzu.Birak(gameObject);
     }
 
     private void HasarYazisiGoster(Vector3 konum, int miktar, Color renk, bool sifaMi, bool kritik)
@@ -181,7 +194,7 @@ public class Gulle : MonoBehaviour
 
     // Random.Range kaldırıldı: Tam tepe orta noktasına hizalandı
     Vector3 yaziPos = konum + new Vector3(0f, 0.5f, 0f);
-    GameObject yaziObj = Instantiate(hasarYazisiPrefab, yaziPos, Quaternion.identity);
+    GameObject yaziObj = NesneHavuzu.Al(hasarYazisiPrefab, yaziPos, Quaternion.identity);
     HasarYazisi yaziComp = yaziObj.GetComponent<HasarYazisi>();
     if (yaziComp != null)
     {
@@ -241,7 +254,7 @@ public class AsitHasarYoneticisi : MonoBehaviour
 
     // Random.Range kaldırıldı: Tam tepe orta noktasına hizalandı
     Vector3 pos = konum + new Vector3(0f, 0.5f, 0f);
-    GameObject yaziObj = Instantiate(yaziPrefab, pos, Quaternion.identity);
+    GameObject yaziObj = NesneHavuzu.Al(yaziPrefab, pos, Quaternion.identity);
     HasarYazisi yazi = yaziObj.GetComponent<HasarYazisi>();
     if (yazi != null)
     {

@@ -128,6 +128,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 179544546}
+  - component: {fileID: 179544547}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -150,6 +151,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &179544547
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 179544545}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 38fdb80536f74f146b8cd89664bb296e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UILoader
 --- !u!1 &701005203
 GameObject:
   m_ObjectHideFlags: 0
@@ -214,7 +227,7 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  npcPrefab: {fileID: 1000000000000001, guid: 3f45a5e5f652f77439edc7481b3cc4d5, type: 3}
+  npcVariantPrefab: {fileID: 288337826457047702, guid: 7375b6bf347ecee4c8c0c2c5ff550f22, type: 3}
   toplamNpcSayisi: 40
   haritaNpcTuru: 0
   spawnAlaniMin: {x: -50, y: -70}
@@ -422,6 +435,19 @@ MonoBehaviour:
   playerSpawnMethod: 0
   spawnPrefabs:
   - {fileID: 1000000000000001, guid: 3f45a5e5f652f77439edc7481b3cc4d5, type: 3}
+  - {fileID: 2991911164982461580, guid: 04105a4cd225dcf448ef819883655863, type: 3}
+  - {fileID: 7825785868364025836, guid: 7670f4b72b0d472449e39eba66c6703e, type: 3}
+  - {fileID: 288337826457047702, guid: 7375b6bf347ecee4c8c0c2c5ff550f22, type: 3}
+  - {fileID: 6242290504583341769, guid: ecb1198490f44ef47b6ba08ae3893ce0, type: 3}
+  - {fileID: 3642137477580082201, guid: 770e4d162f4ebae458514249f9f05fe3, type: 3}
+  - {fileID: 3043474638411567726, guid: 5b00182c62facac40ae988f5b2541b33, type: 3}
+  - {fileID: 3603864805628652929, guid: 7df87773f0d012f45b591e5191e91088, type: 3}
+  - {fileID: 3756998149274701349, guid: e51d2232dcc035f4d9c4a38b2edacf01, type: 3}
+  - {fileID: 5126768461186275154, guid: ace3fb6c29cb64349b5bc843fa7f7b2e, type: 3}
+  - {fileID: 8595709888956395389, guid: 5db0b1e9e7dfb3d4c9c6144e23e54e57, type: 3}
+  - {fileID: 9124893550681840776, guid: d79e9c0ebd907784d92f30158204debc, type: 3}
+  - {fileID: 5688554963329992832, guid: 79d2dc33737cab1458630e79675ec99e, type: 3}
+  - {fileID: 4502392546176224126, guid: edb5f2b18748aa042bcf23260302dc3b, type: 3}
   exceptionsDisconnect: 1
   snapshotSettings:
     bufferTimeMultiplier: 2

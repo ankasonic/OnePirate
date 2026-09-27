@@ -6,7 +6,8 @@ using Mirror;
 public class NpcSpawner : NetworkBehaviour
 {
     [Header("Spawn Ayarları")]
-    [SerializeField] private GameObject npcPrefab;
+    [Tooltip("GDD: Spawnable Prefabs listesindeki variant prefabı (NPC_Boris vs) sürükleyin")]
+    [SerializeField] private GameObject npcVariantPrefab;
     [SerializeField] private int toplamNpcSayisi = 40; // GDD: 40 adet NPC
     [SerializeField] private NpcTuru haritaNpcTuru = NpcTuru.BorisJuckson;
     [SerializeField] private Vector2 spawnAlaniMin = new Vector2(-20f, -20f);
@@ -19,20 +20,40 @@ public class NpcSpawner : NetworkBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+    private Coroutine spawnCoroutine;
+
     public override void OnStartServer()
     {
         base.OnStartServer();
-        StartCoroutine(NpcleriBaslat());
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+        
+        // Eğer sunucu başladığında zaten 1-1 veya 2-1'deysek hemen başlat
+        string aktifSahne = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        if (aktifSahne == "1-1" || aktifSahne == "2-1")
+        {
+            if (spawnCoroutine != null) StopCoroutine(spawnCoroutine);
+            spawnCoroutine = StartCoroutine(NpcleriBaslat());
+        }
+    }
+
+    public override void OnStopServer()
+    {
+        base.OnStopServer();
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        if (scene.name == "1-1" || scene.name == "2-1")
+        {
+            aktifNpcler.Clear();
+            if (spawnCoroutine != null) StopCoroutine(spawnCoroutine);
+            spawnCoroutine = StartCoroutine(NpcleriBaslat());
+        }
     }
 
     private IEnumerator NpcleriBaslat()
     {
-        // 1-1 sahnesi aktif olana kadar bekle (Baslangic'tan gecis sirasinda kaybolmasin)
-        while (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != "1-1")
-        {
-            yield return new WaitForSeconds(0.2f);
-        }
-
         yield return new WaitForSeconds(1f);
 
         // GDD: 10'ar gruplar halinde spawn olur
@@ -58,9 +79,9 @@ public class NpcSpawner : NetworkBehaviour
     [Server]
     private void TekNpcOlustur(Vector2 konum)
     {
-        if (npcPrefab == null) return;
+        if (npcVariantPrefab == null) return;
 
-        GameObject npcObj = Instantiate(npcPrefab, konum, Quaternion.identity);
+        GameObject npcObj = Instantiate(npcVariantPrefab, konum, Quaternion.identity);
         NpcHasar hasar = npcObj.GetComponent<NpcHasar>();
         if (hasar != null)
         {
